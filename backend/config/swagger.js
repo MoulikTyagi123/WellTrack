@@ -10,7 +10,7 @@ const options = {
     },
     servers: [
       {
-        url: "http://localhost:5000",
+        url: "https://wellness-tracker-backend-4if1.onrender.com",
       },
     ],
   },

@@ -19,7 +19,7 @@ function Wellness() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/mental", {
+      const res = await fetch("https://wellness-tracker-backend-4if1.onrender.com/api/mental", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

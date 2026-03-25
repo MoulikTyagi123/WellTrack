@@ -95,7 +95,7 @@ exports.forgotPassword = async (req, res) => {
 
     await user.save();
 
-    const resetURL = `http://localhost:5000/api/auth/reset-password?token=${resetToken}`;
+    const resetURL = `https://wellness-tracker-backend-4if1.onrender.com/api/auth/reset-password?token=${resetToken}`;
 
     const transporter = nodemailer.createTransport({
       service: "gmail",

@@ -11,7 +11,7 @@ const Profile = () => {
   // ✅ FETCH PROFILE
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/me`, {
+      const res = await fetch(`https://wellness-tracker-backend-4if1.onrender.com/api/auth/me`, {
         headers: {
           Authorization: token,
         },
@@ -50,7 +50,7 @@ const Profile = () => {
   // ✅ UPDATE PROFILE
   const handleUpdate = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/auth/me`, {
+      const res = await fetch(`https://wellness-tracker-backend-4if1.onrender.com/api/auth/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

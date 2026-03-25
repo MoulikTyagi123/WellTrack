@@ -68,7 +68,7 @@ function UserAnalytics() {
         const token = localStorage.getItem("token");
 
         const res = await axios.get(
-          `http://localhost:5000/api/dashboard/my-analytics?range=${range}&type=${tab}`,
+          `https://wellness-tracker-backend-4if1.onrender.com/api/dashboard/my-analytics?range=${range}&type=${tab}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

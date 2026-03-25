@@ -20,7 +20,7 @@ function Sleep() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/sleep", {
+      const res = await fetch("https://wellness-tracker-backend-4if1.onrender.com/api/sleep", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

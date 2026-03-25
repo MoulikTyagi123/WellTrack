@@ -68,12 +68,12 @@ const UserDetails = () => {
         const token = localStorage.getItem("token");
 
         const userRes = await axios.get(
-          `http://localhost:5000/api/admin/users/${id}`,
+          `https://wellness-tracker-backend-4if1.onrender.com/api/admin/users/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         const analyticsRes = await axios.get(
-          `http://localhost:5000/api/admin/users/${id}/analytics`,
+          `https://wellness-tracker-backend-4if1.onrender.com/api/admin/users/${id}/analytics`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

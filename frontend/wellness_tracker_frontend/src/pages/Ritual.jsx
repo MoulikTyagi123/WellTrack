@@ -18,7 +18,7 @@ function Ritual() {
         const today = new Date().toISOString();
 
         const res = await fetch(
-          `http://localhost:5000/api/ritual/${today}`,
+          `https://wellness-tracker-backend-4if1.onrender.com/api/ritual/${today}`,
           {
             headers: { Authorization: token },
           }
@@ -47,7 +47,7 @@ function Ritual() {
 
     try {
       if (!id) {
-        const createRes = await fetch(`http://localhost:5000/api/ritual`, {
+        const createRes = await fetch(`https://wellness-tracker-backend-4if1.onrender.com/api/ritual`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -87,7 +87,7 @@ function Ritual() {
       };
 
       const res = await fetch(
-        `http://localhost:5000/api/ritual/${id}/activity`,
+        `https://wellness-tracker-backend-4if1.onrender.com/api/ritual/${id}/activity`,
         {
           method: "POST",
           headers: {
@@ -134,7 +134,7 @@ function Ritual() {
       const token = localStorage.getItem("token");
 
       await fetch(
-        `http://localhost:5000/api/ritual/${ritualId}/activity/${activity._id}`,
+        `https://wellness-tracker-backend-4if1.onrender.com/api/ritual/${ritualId}/activity/${activity._id}`,
         {
           method: "PUT",
           headers: {
@@ -155,7 +155,7 @@ function Ritual() {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `http://localhost:5000/api/ritual/${ritualId}/activity/${activityId}`,
+        `https://wellness-tracker-backend-4if1.onrender.com/api/ritual/${ritualId}/activity/${activityId}`,
         {
           method: "DELETE",
           headers: {

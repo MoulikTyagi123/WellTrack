@@ -2,7 +2,7 @@
 export default {
   server: {
     proxy: {
-      "/api": "http://localhost:5000",
+      "/api": "https://wellness-tracker-backend-4if1.onrender.com",
     },
   },
 };
