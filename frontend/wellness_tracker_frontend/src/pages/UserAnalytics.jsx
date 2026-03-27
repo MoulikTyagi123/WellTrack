@@ -73,24 +73,24 @@ function UserAnalytics() {
 
         const rawData = res.data.data || [];
 
-        const processed = rawData.map((item) => {
-          if (isDemoUser) {
-            const fallback = generateFallback();
-            return {
-              date: item.date,
-              sleep: item.sleep ?? fallback.sleep,
-              calories: item.calories ?? fallback.calories,
-              mood: item.mood ?? fallback.mood,
-            };
-          }
+      const processed = rawData.map((item) => {
+  if (isDemoUser) {
+    const fallback = generateFallback();
+    return {
+      date: item.date,
+      sleep: item.sleep ?? fallback.sleep,
+      calories: item.calories ?? fallback.calories,
+      mood: item.mood ?? fallback.mood,
+    };
+  }
 
-          return {
-            date: item.date,
-            sleep: item.sleep ?? null,
-            calories: item.calories ?? null,
-            mood: item.mood ?? null,
-          };
-        });
+  return {
+    date: item.date,
+    sleep: item.sleep ?? null,
+    calories: item.calories ?? null,
+    mood: item.mood ?? null,
+  };
+});
 
         setSafeData(processed);
         setInsights(generateClientInsights(processed, tab));

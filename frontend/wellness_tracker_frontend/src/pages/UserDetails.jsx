@@ -20,6 +20,16 @@ const UserDetails = () => {
   const [insights, setInsights] = useState([]);
   const [range, setRange] = useState(7);
 
+  // ✅ DETECT DEMO
+  const isDemoUser = localStorage.getItem("demoUser") === "true";
+
+  // ✅ RANDOM FALLBACK GENERATOR
+  const generateFallback = () => ({
+    sleep: Math.floor(60 + Math.random() * 40),
+    calories: Math.floor(1800 + Math.random() * 600),
+    mood: Math.floor(2 + Math.random() * 3),
+  });
+
   // ✅ MULTI INSIGHTS (sleep + calories + mood)
   const generateInsights = (data) => {
     const result = [];
@@ -48,13 +58,18 @@ const UserDetails = () => {
 
     if (sleep) {
       result.push(`Sleep is ${sleep.trend}`);
-      result.push(sleep.avg >= 70 ? "Overall good sleep 😴" : "Sleep needs improvement ⚠️");
+      result.push(
+        sleep.avg >= 70
+          ? "Overall good sleep 😴"
+          : "Sleep needs improvement ⚠️"
+      );
     }
 
     if (calories) {
       result.push(`Calories are ${calories.trend}`);
       if (calories.avg > 2500) result.push("High calorie intake 🍔");
-      else if (calories.avg < 1800) result.push("Low calorie intake ⚠️");
+      else if (calories.avg < 1800)
+        result.push("Low calorie intake ⚠️");
       else result.push("Balanced diet ✅");
     }
 
@@ -93,34 +108,42 @@ const UserDetails = () => {
           dataMap[key] = item;
         });
 
-        // ✅ IMPORTANT FIX
-        const hasRealData = rawData.length > 0;
-
         const processed = [];
 
         for (let i = range - 1; i >= 0; i--) {
           const dateObj = new Date();
           dateObj.setDate(dateObj.getDate() - i);
 
-          const isToday =
-            new Date().toDateString() === dateObj.toDateString();
-
           const key = dateObj.toDateString();
           const existing = dataMap[key];
 
-          let sleep = null;
-          let calories = null;
-          let mood = null;
+          let sleep, calories, mood;
 
-          if (existing) {
-            sleep = existing.sleep ?? null;
-            calories = existing.calories ?? null;
-            mood = existing.mood ?? null;
-          } else if (!isToday && hasRealData) {
-            sleep = null;
-            calories = null;
-            mood = null;
-          }
+// ✅ CHANGE ONLY THIS BLOCK
+
+if (existing) {
+  if (isDemoUser) {
+    const fallback = generateFallback();
+    sleep = existing.sleep ?? fallback.sleep;
+    calories = existing.calories ?? fallback.calories;
+    mood = existing.mood ?? fallback.mood;
+  } else {
+    sleep = existing.sleep ?? null;
+    calories = existing.calories ?? null;
+    mood = existing.mood ?? null;
+  }
+} else {
+  if (isDemoUser) {
+    const fallback = generateFallback();
+    sleep = fallback.sleep;
+    calories = fallback.calories;
+    mood = fallback.mood;
+  } else {
+    sleep = null;
+    calories = null;
+    mood = null;
+  }
+}
 
           processed.push({
             date: dateObj.toISOString(),
@@ -133,27 +156,40 @@ const UserDetails = () => {
         setUser(userRes.data);
         setAnalytics(processed);
         setInsights(generateInsights(processed));
-
       } catch (err) {
         console.error(err);
 
-        // ✅ CLEAN EMPTY FALLBACK
+        // ✅ DEMO FALLBACK EVEN ON ERROR
         const fallbackData = [];
 
         for (let i = range - 1; i >= 0; i--) {
           const dateObj = new Date();
           dateObj.setDate(dateObj.getDate() - i);
 
-          fallbackData.push({
-            date: dateObj.toISOString(),
-            sleep: null,
-            calories: null,
-            mood: null,
-          });
+          if (isDemoUser) {
+            const fallback = generateFallback();
+            fallbackData.push({
+              date: dateObj.toISOString(),
+              sleep: fallback.sleep,
+              calories: fallback.calories,
+              mood: fallback.mood,
+            });
+          } else {
+            fallbackData.push({
+              date: dateObj.toISOString(),
+              sleep: null,
+              calories: null,
+              mood: null,
+            });
+          }
         }
 
         setAnalytics(fallbackData);
-        setInsights(["No data available"]);
+        setInsights(
+          isDemoUser
+            ? generateInsights(fallbackData)
+            : ["No data available"]
+        );
       }
     };
 
