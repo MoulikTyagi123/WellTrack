@@ -16,7 +16,7 @@ const DEMO_IDS = [
   "69c62372f84856e3a6d12878",
 ];
 
-// ✅ Client-side insight generator — works with any number of entries >= 1
+// ✅ Identical logic to UserDetails — works for 1+ entries, always produces output
 const generateLocalInsights = (data, type) => {
   const values = data
     .map((d) => d[type])
@@ -52,28 +52,36 @@ const generateLocalInsights = (data, type) => {
   else insights.push(`${label} is stable`);
 
   if (type === "sleep") {
-    if (avg >= 7) insights.push(trend === "declining" ? `Avg ${avg.toFixed(1)} hrs — still good 😴` : `Good avg: ${avg.toFixed(1)} hrs 😴`);
-    else insights.push(trend === "improving" ? `Avg ${avg.toFixed(1)} hrs — improving but below 7 ⚠️` : `Low avg: ${avg.toFixed(1)} hrs — aim for 7+ ⚠️`);
+    if (avg >= 7)
+      insights.push(trend === "declining"
+        ? `Average ${avg.toFixed(1)} hrs — still good but watch the trend 😴`
+        : `Good sleep average: ${avg.toFixed(1)} hrs 😴`);
+    else
+      insights.push(trend === "improving"
+        ? `Average ${avg.toFixed(1)} hrs — improving but still below 7 hrs ⚠️`
+        : `Low sleep average: ${avg.toFixed(1)} hrs — aim for 7+ hrs ⚠️`);
   }
+
   if (type === "calories") {
-    if (avg > 2500) insights.push(`High avg: ${Math.round(avg)} kcal/day 🍔`);
-    else if (avg < 1800) insights.push(`Low avg: ${Math.round(avg)} kcal/day ⚠️`);
-    else insights.push(`Balanced avg: ${Math.round(avg)} kcal/day ✅`);
+    if (avg > 2500) insights.push(`High average: ${Math.round(avg)} kcal/day 🍔`);
+    else if (avg < 1800) insights.push(`Low average: ${Math.round(avg)} kcal/day ⚠️`);
+    else insights.push(`Balanced average: ${Math.round(avg)} kcal/day ✅`);
   }
+
   if (type === "mood") {
-    if (avg >= 4) insights.push(`Great avg mood: ${avg.toFixed(1)}/5 😄`);
-    else if (avg >= 3) insights.push(`Stable avg mood: ${avg.toFixed(1)}/5 🙂`);
-    else insights.push(`Low avg mood: ${avg.toFixed(1)}/5 ⚠️`);
+    if (avg >= 4) insights.push(`Great average mood: ${avg.toFixed(1)}/5 😄`);
+    else if (avg >= 3) insights.push(`Stable average mood: ${avg.toFixed(1)}/5 🙂`);
+    else insights.push(`Low average mood: ${avg.toFixed(1)}/5 ⚠️`);
   }
 
   return insights;
 };
 
-// ✅ Generate one random value per metric per day — called fresh per day so values vary
+// ✅ Fresh random fallback per day so every day is different
 const makeDayFallback = () => ({
-  sleep: parseFloat((5 + Math.random() * 4).toFixed(2)),       // 5.00 – 9.00
-  calories: Math.floor(1800 + Math.random() * 700),             // 1800 – 2500
-  mood: Math.floor(2 + Math.random() * 4),                      // 2 – 5
+  sleep: parseFloat((5 + Math.random() * 4).toFixed(2)),
+  calories: Math.floor(1800 + Math.random() * 700),
+  mood: Math.floor(2 + Math.random() * 4),
 });
 
 // ✅ Build full date range array for numDays days ending today
@@ -107,7 +115,6 @@ function UserAnalytics() {
         );
 
         const raw = res.data.data || [];
-        const serverInsights = res.data.insights || [];
 
         // Build a date→item map from server response
         const byDate = {};
@@ -120,11 +127,10 @@ function UserAnalytics() {
           const item = byDate[dateStr];
 
           if (isDemoUser) {
-            // ✅ FIX: generate fresh random fallback per day so each day is different
+            // ✅ Fresh random per day — each day has unique values
             const f = makeDayFallback();
             return {
               date: dateStr,
-              // ✅ Use real data if present, otherwise unique random per day
               sleep: (item?.sleep != null) ? item.sleep : f.sleep,
               calories: (item?.calories != null) ? item.calories : f.calories,
               mood: (item?.mood != null) ? item.mood : f.mood,
@@ -141,19 +147,13 @@ function UserAnalytics() {
 
         setSafeData(processed);
 
-        // ✅ Always generate insights locally — never show "Not enough data"
-        const usableServerInsights =
-          serverInsights.length > 0 &&
-          !serverInsights.includes("Not enough data") &&
-          !serverInsights.includes("Not enough valid data")
-            ? serverInsights
-            : null;
-
-        setInsights(usableServerInsights || generateLocalInsights(processed, tab));
+        // ✅ KEY FIX: always generate insights locally from processed data
+        // This mirrors exactly what UserDetails does — guaranteed to produce output
+        // for demo users (who have fallback values) and real entries if they exist.
+        setInsights(generateLocalInsights(processed, tab));
       } catch (err) {
         console.error(err);
 
-        // ✅ On error: demo gets fallback, real user gets empty date range
         const allDates = buildDateRange(parseInt(range));
 
         if (isDemoUser) {
@@ -162,13 +162,15 @@ function UserAnalytics() {
             return { date: dateStr, ...f };
           });
           setSafeData(fallback);
+          // ✅ Demo always gets insights even on error
           setInsights(generateLocalInsights(fallback, tab));
         } else {
           const empty = allDates.map((dateStr) => ({
             date: dateStr, sleep: null, calories: null, mood: null,
           }));
           setSafeData(empty);
-          setInsights(["No data available — start logging to see your insights!"]);
+          // ✅ Real user with no data: honest empty message
+          setInsights(["No data yet — start logging to see your insights!"]);
         }
       }
     };
@@ -176,9 +178,8 @@ function UserAnalytics() {
     fetchData();
   }, [range, tab]);
 
-  // ✅ CSV: e.g. "sleep_7days_analytics.csv"
+  // ✅ CSV: apostrophe prefix so Excel shows date as text, not ##########
   const handleDownloadCSV = () => {
-    // ✅ Prefix date with apostrophe so Excel treats it as text, not a date (no ## display)
     const csvData = safeData.map((row) => ({
       Date: `'${row.date}`,
       Sleep_hrs: row.sleep ?? "",
@@ -237,7 +238,7 @@ function UserAnalytics() {
         ))}
       </div>
 
-      {/* ✅ INSIGHTS — always rendered */}
+      {/* ✅ INSIGHTS — always rendered, same style as UserDetails */}
       <div className="bg-white rounded-xl shadow p-4 mb-6">
         <h3 className="font-semibold text-gray-800 mb-2">
           📊 Insights — {tabLabels[tab]}
