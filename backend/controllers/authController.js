@@ -18,18 +18,25 @@ exports.signup = async (req, res) => {
 
     await user.save();
 
-    // Send verification email
-    await sendVerificationEmail(user.email, emailVerificationToken);
+    // ✅ FIX: wrap sendVerificationEmail in try/catch so email failure
+    // does NOT kill the signup response. User is created regardless.
+    try {
+      await sendVerificationEmail(user.email, emailVerificationToken);
+    } catch (emailErr) {
+      console.warn("Verification email failed to send:", emailErr.message);
+      // Continue — user still created successfully
+    }
 
     res.status(201).json({
       message:
-        "Account created successfully. You can login now. (Email verification optional)",
+        "Account created successfully! You can login now. A verification email has been sent if your email is valid — check your inbox to verify.",
       user,
     });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 };
+
 exports.verifyEmail = async (req, res) => {
   try {
     const { token } = req.query;
@@ -58,6 +65,7 @@ exports.verifyEmail = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
 exports.login = async (req, res) => {
   try {
     console.log("Login request body:", req.body);
@@ -78,6 +86,7 @@ exports.login = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
 exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -139,8 +148,6 @@ exports.resetPassword = async (req, res) => {
         message: "Invalid or expired token",
       });
     }
-
-    const bcrypt = require("bcryptjs");
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 

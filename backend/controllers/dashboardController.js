@@ -1,6 +1,4 @@
-const {
-  getTodayDashboard: getTodayDashboardService,
-} = require("../services/dashboardService");
+const dashboardService = require("../services/dashboardService");
 const SleepEntry = require("../models/SleepEntry");
 const NutritionEntry = require("../models/NutritionEntry");
 const MentalWellnessEntry = require("../models/mentalWellnessEntry");
@@ -15,38 +13,34 @@ const getDashboard = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const data = await getTodayDashboardService(userId);
+    // ✅ FIX: call as plain function, not destructured
+    const data = await dashboardService.getTodayDashboard(userId);
 
-    // ✅ EXISTING (sleep streak)
     const sleepEntries = await SleepEntry.find({ userId });
     const sleepStreak = calculateStreak(sleepEntries);
 
-    // 🔥 NEW ADDITIONS (THIS IS WHAT I MEANT BY MODIFY THIS PART ONLY)
     const nutritionEntries = await NutritionEntry.find({ userId });
     const mentalEntries = await MentalWellnessEntry.find({ userId });
 
     const calorieStreak = calculateGenericStreak(
       nutritionEntries,
-      "actualCalories",
+      "actualCalories"
     );
 
     const moodStreak = calculateGenericStreak(mentalEntries, "mood");
 
-    // ✅ FINAL RESPONSE
     res.json({
       ...data,
       sleepStreak,
-      calorieStreak, // ✅ NEW
-      moodStreak, // ✅ NEW
+      calorieStreak,
+      moodStreak,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-
-
-// ✅ GET MY ANALYTICS (NO CHANGE)
+// ✅ GET MY ANALYTICS
 const getMyAnalytics = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -117,7 +111,7 @@ const getMyAnalytics = async (req, res) => {
           sleep: null,
           calories: null,
           mood: null,
-        },
+        }
       );
     }
 
@@ -134,13 +128,4 @@ const getMyAnalytics = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-module.exports = { getDashboard , getMyAnalytics };
+module.exports = { getDashboard, getMyAnalytics };

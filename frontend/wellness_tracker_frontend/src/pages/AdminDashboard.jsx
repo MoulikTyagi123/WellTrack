@@ -12,24 +12,26 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const DEMO_IDS = [
+  "69c6233df84856e3a6d12872",
+  "69c62372f84856e3a6d12878",
+];
+
 function AdminDashboard() {
   const [data, setData] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
+  const [range, setRange] = useState("30"); // ✅ NEW: range state
 
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [appliedUsers, setAppliedUsers] = useState([]);
 
-  const DEMO_IDS = [
-    "69c6233df84856e3a6d12872",
-    "69c62372f84856e3a6d12878",
-  ];
-
   const generateFallback = () => ({
-    sleep: Math.floor(60 + Math.random() * 40),
+    sleep: parseFloat((5 + Math.random() * 4).toFixed(2)),
     calories: Math.floor(1800 + Math.random() * 600),
     mood: Math.floor(2 + Math.random() * 3),
   });
 
+  // ✅ FIX: re-fetch when range changes
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -37,7 +39,7 @@ function AdminDashboard() {
 
         const [analyticsRes, usersRes] = await Promise.all([
           axios.get(
-            "https://wellness-tracker-backend-4if1.onrender.com/api/admin/analytics",
+            `https://wellness-tracker-backend-4if1.onrender.com/api/admin/analytics?range=${range}`,
             { headers: { Authorization: `Bearer ${token}` } }
           ),
           axios.get(
@@ -51,6 +53,7 @@ function AdminDashboard() {
 
         setAllUsers(users);
 
+        // ✅ Ensure today is always present
         const today = new Date().toISOString().split("T")[0];
         if (!raw.some((r) => r.date?.startsWith(today))) {
           raw.push({ date: today });
@@ -68,6 +71,7 @@ function AdminDashboard() {
               if (row[key] !== undefined && row[key] !== null) {
                 newRow[key] = row[key];
               } else if (DEMO_IDS.includes(userId)) {
+                // ✅ Demo users always get fallback
                 newRow[key] = generateFallback()[type];
               } else {
                 newRow[key] = null;
@@ -85,7 +89,7 @@ function AdminDashboard() {
     };
 
     fetchData();
-  }, []);
+  }, [range]); // ✅ re-fetch on range change
 
   const handleCheckbox = (userId) => {
     if (selectedUsers.includes(userId)) {
@@ -101,7 +105,6 @@ function AdminDashboard() {
 
   const applySelection = () => setAppliedUsers(selectedUsers);
 
-  // ✅ CSV BACK (FIXED)
   const downloadCSV = () => {
     if (appliedUsers.length === 0) {
       alert("Select users first");
@@ -122,10 +125,11 @@ function AdminDashboard() {
       return newRow;
     });
 
-    exportToCSV(filtered, "admin_selected_users.csv");
+    // ✅ FIX: proper filename with range
+    exportToCSV(filtered, `admin_users_${range}days_analytics.csv`);
   };
 
-  const colors = ["#3b82f6","#10b981","#f59e0b","#ef4444","#8b5cf6"];
+  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
   const renderChart = (type, title) => (
     <div className="bg-white p-5 rounded-xl shadow-md">
@@ -168,7 +172,24 @@ function AdminDashboard() {
     <div className="p-6 bg-gray-100 min-h-screen">
       <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
 
-      {/* ✅ CSV BUTTON RESTORED */}
+      {/* ✅ RANGE SELECTOR */}
+      <div className="flex gap-3 mb-6">
+        {["7", "15", "30"].map((r) => (
+          <button
+            key={r}
+            onClick={() => setRange(r)}
+            className={`px-4 py-2 rounded font-medium border transition ${
+              range === r
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            Last {r} Days
+          </button>
+        ))}
+      </div>
+
+      {/* CSV Button */}
       <button
         onClick={downloadCSV}
         className="mb-6 bg-green-600 text-white px-4 py-2 rounded"
@@ -176,17 +197,21 @@ function AdminDashboard() {
         Download CSV
       </button>
 
+      {/* User Selector */}
       <div className="mb-6 bg-white p-4 rounded-xl shadow-md max-w-md">
-        <h3>Select Users (max 10)</h3>
+        <h3 className="font-semibold mb-3">Select Users (max 10)</h3>
 
         {allUsers.map((user) => (
-          <label key={user._id} className="block">
+          <label key={user._id} className="flex items-center gap-2 mb-2 cursor-pointer">
             <input
               type="checkbox"
               checked={selectedUsers.includes(user._id)}
               onChange={() => handleCheckbox(user._id)}
             />
-            {user.name}
+            <span>{user.name}</span>
+            {DEMO_IDS.includes(user._id) && (
+              <span className="text-xs text-blue-500 bg-blue-50 px-1 rounded">demo</span>
+            )}
           </label>
         ))}
 
@@ -198,8 +223,9 @@ function AdminDashboard() {
         </button>
       </div>
 
+      {/* Charts */}
       <div className="grid gap-6">
-        {renderChart("sleep", "Sleep")}
+        {renderChart("sleep", "Sleep (hrs)")}
         {renderChart("calories", "Calories")}
         {renderChart("mood", "Mood")}
       </div>

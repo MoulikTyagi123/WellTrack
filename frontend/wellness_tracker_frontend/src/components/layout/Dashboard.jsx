@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const DEMO_IDS = [
+  "69c6233df84856e3a6d12872",
+  "69c62372f84856e3a6d12878",
+];
+
 function Dashboard() {
   const navigate = useNavigate();
 
@@ -13,15 +18,21 @@ function Dashboard() {
     health: 0,
   });
 
-  // ✅ DEMO FALLBACK (ONLY USED FOR DEMO USERS)
-  const generateFallback = () => {
-    return {
-      sleep: Math.floor(60 + Math.random() * 40),
-      nutrition: Math.floor(1800 + Math.random() * 600),
-      wellness: Math.floor(2 + Math.random() * 3),
-      ritual: Math.floor(50 + Math.random() * 50),
-      sleepStreak: Math.floor(2 + Math.random() * 10),
-    };
+  // ✅ DEMO FALLBACK
+  const generateFallback = () => ({
+    sleep: Math.floor(60 + Math.random() * 40),
+    nutrition: Math.floor(1800 + Math.random() * 600),
+    wellness: Math.floor(2 + Math.random() * 3),
+    ritual: Math.floor(50 + Math.random() * 50),
+    sleepStreak: Math.floor(2 + Math.random() * 10),
+  });
+
+  const applyFallback = () => {
+    const fallback = generateFallback();
+    setScores({
+      ...fallback,
+      health: fallback.sleep + fallback.ritual + fallback.wellness,
+    });
   };
 
   useEffect(() => {
@@ -30,79 +41,64 @@ function Dashboard() {
         const token = localStorage.getItem("token");
         const user = JSON.parse(localStorage.getItem("user"));
 
-        const isDemoUser = user?.email?.includes("demo"); // ✅ CONDITION
+        // ✅ FIX: check by _id, not by email string
+        const isDemoUser = DEMO_IDS.includes(user?._id);
 
         const res = await fetch(
           "https://wellness-tracker-backend-4if1.onrender.com/api/dashboard",
           {
             headers: {
-              Authorization: token,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
+
+        // ✅ FIX: if server errors (500), use fallback for demo, empty for new user
+        if (!res.ok) {
+          console.warn("Dashboard API error:", res.status);
+          if (isDemoUser) {
+            applyFallback();
+          }
+          return;
+        }
 
         const data = await res.json();
 
         console.log("DASHBOARD DATA:", data);
 
-        // ❌ NEW USER → NO DATA → NO FALLBACK
-        if (!data || Object.keys(data).length === 0) {
+        // ✅ If the response itself is an error object
+        if (data?.message) {
+          console.warn("Dashboard returned error message:", data.message);
           if (isDemoUser) {
-            // ✅ DEMO USER → SHOW FALLBACK
-            const fallback = generateFallback();
-
-            setScores({
-              ...fallback,
-              health:
-                fallback.sleep +
-                fallback.ritual +
-                fallback.wellness,
-            });
-          } else {
-            // ✅ REAL USER → CLEAN EMPTY STATE
-            setScores({
-              sleep: 0,
-              nutrition: 0,
-              wellness: 0,
-              ritual: 0,
-              sleepStreak: 0,
-              health: 0,
-            });
+            applyFallback();
           }
-        } else {
-          // ✅ REAL DATA (NO RANDOM FALLBACK HERE)
-          const sleep = data.sleepConsistencyScore ?? 0;
-          const nutrition = data.consumedCalories ?? 0;
-          const wellness = data.mood ?? 0;
-          const ritual = data.ritualScore ?? 0;
-          const sleepStreak = data.sleepStreak ?? 0;
-
-          setScores({
-            sleep,
-            nutrition,
-            wellness,
-            ritual,
-            sleepStreak,
-            health: sleep + ritual + wellness,
-          });
+          return;
         }
+
+        // ✅ REAL DATA — use what the server gave us
+        const sleep = data.sleepConsistencyScore ?? (isDemoUser ? generateFallback().sleep : 0);
+        const nutrition = data.consumedCalories ?? (isDemoUser ? generateFallback().nutrition : 0);
+        const wellness = data.mood ?? (isDemoUser ? generateFallback().wellness : 0);
+        const ritual = data.ritualScore ?? (isDemoUser ? generateFallback().ritual : 0);
+        const sleepStreak = data.sleepStreak ?? (isDemoUser ? generateFallback().sleepStreak : 0);
+
+        setScores({
+          sleep,
+          nutrition,
+          wellness,
+          ritual,
+          sleepStreak,
+          health: sleep + ritual + wellness,
+        });
       } catch (err) {
         console.error(err);
 
-        // ❌ ERROR CASE → ONLY DEMO GETS FALLBACK
+        // ✅ ERROR CASE — only demo gets fallback
         const user = JSON.parse(localStorage.getItem("user"));
-        const isDemoUser = user?.email?.includes("demo");
+        const isDemoUser = DEMO_IDS.includes(user?._id);
 
         if (isDemoUser) {
-          const fallback = generateFallback();
-
-          setScores({
-            ...fallback,
-            health:
-              fallback.sleep +
-              fallback.ritual +
-              fallback.wellness,
-          });
+          applyFallback();
         } else {
           setScores({
             sleep: 0,
@@ -123,7 +119,7 @@ function Dashboard() {
     <div className="p-6">
 
       <h2 className="text-2xl font-bold mb-6">
-        Today’s Dashboard 📊
+        Today's Dashboard 📊
       </h2>
 
       {/* Health Score */}
